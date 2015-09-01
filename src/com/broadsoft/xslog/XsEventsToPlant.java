@@ -18,9 +18,24 @@ public class XsEventsToPlant {
         OUT
     }
 
-    private final static String XS_DATE = "";
+    private final static String XS_DATE = "\\d{4}\\.\\d{2}\\.\\d{2} \\d{2}:\\d{2}:\\d{2}:\\d{1,3}";
+    private final static String XS_DEVICE = "[0-9.@+]+";
+    private final static String XS_SESSION_ID = "(callhalf-[0-9:]+)";
+    private final static String TYPE = "(?:Sip|SipMedia)"; // TODO: capture this to distinguish between SipEndpoint am SipMediaEndpoint ?
 
-    private final static Pattern HEAD_LINE = Pattern.compile("");
+
+    private final static Pattern HEAD_LINE = Pattern.compile(XS_DATE
+            + " EDT \\| Info\\s{7}\\| "
+            + TYPE + " \\| "
+            + XS_DEVICE + " \\| "
+            + XS_SESSION_ID );
+
+    private final static String XS_EVENT_ACTION = "\\t(?:Resuming|Processing|Transforming) Event: ";
+    private final static String XS_EVENT = "com\\.broadsoft\\.(?:\\w|\\.|)+?\\.(\\w+Event)";
+    private final static String XS_EVENT_END = "\\s?(.*)$";
+    private final static String XS_SESSION = "((?:\\w|-|:|\\.)+)";
+    private final static Pattern XS_SESSION_PAIR = Pattern.compile("\\{" + XS_SESSION + "," + XS_SESSION + "}");
+    private final static Pattern EVENT_LINE = Pattern.compile(XS_EVENT_ACTION + XS_EVENT + XS_EVENT_END);
 
     private final static Pattern DIRECTION_LINE =
             Pattern.compile("\\tudp \\d+ Bytes (IN from|OUT to) (\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}):\\d{1,5}");
@@ -41,6 +56,7 @@ public class XsEventsToPlant {
         Direction direction;
         String destination = null;
         String origin = null;
+        String sipEndPoint = null;
         List<String> messages = new ArrayList<>();
 
         Path path = FileSystems.getDefault().getPath(args[0]);
@@ -49,6 +65,31 @@ public class XsEventsToPlant {
         int lineNumber = 0;
         for( String line : lines ) {
             ++lineNumber;
+
+            // event line
+            matcher = EVENT_LINE.matcher(line);
+            if ( matcher.matches() ) {
+                String event = matcher.group(1);
+                String sessionPair = matcher.group(2);
+                if ( sessionPair != null && !sessionPair.isEmpty() ) {
+                    matcher = XS_SESSION_PAIR.matcher( sessionPair );
+                    if ( matcher.find() ) {
+                        origin = "\"" + matcher.group(1) + "\"";
+                        destination = "\"" + matcher.group(2) + "\"";
+                        messages.add(createMessage(event, origin, destination, lineNumber) );
+                    }
+                }
+                continue;
+            }
+
+            // headline
+            matcher = HEAD_LINE.matcher(line);
+            if ( matcher.matches() ) {
+                sipEndPoint = "\"" + "SipEndpoint." + matcher.group(1) + "\"";
+                continue;
+            }
+
+
             //  direction line
             matcher = DIRECTION_LINE.matcher(line);
             if ( matcher.matches() ) {
@@ -56,12 +97,12 @@ public class XsEventsToPlant {
                 String target = "\"" + matcher.group(2) + "\"";
                 switch(direction) {
                     case IN:
-                        destination = "XS";
+                        destination = sipEndPoint;
                         origin = target;
                         break;
                     case OUT:
                         destination = target;
-                        origin = "XS";
+                        origin = sipEndPoint;
                         break;
                 }
                 continue;
