@@ -21,7 +21,7 @@ public class XsEventsToPlant {
     private final static String XS_DATE = "\\d{4}\\.\\d{2}\\.\\d{2} \\d{2}:\\d{2}:\\d{2}:\\d{1,3}";
     private final static String XS_DEVICE = "[0-9.@+]+";
     private final static String XS_SESSION_ID = "(callhalf-[0-9:]+)";
-    private final static String TYPE = "(?:Sip|SipMedia)"; // TODO: capture this to distinguish between SipEndpoint am SipMediaEndpoint ?
+    private final static String TYPE = "(?:Sip|SipMedia)"; // TODO: capture this to distinguish between SipEndpoint and SipMediaEndpoint ?
 
 
     private final static Pattern HEAD_LINE = Pattern.compile(XS_DATE
@@ -52,6 +52,13 @@ public class XsEventsToPlant {
         return origin + " -> " + destination + " : " + "[[" + lineNumber + "]] " + message + "\n";
     }
 
+    public static String replaceService(String target) {
+        if ( target.startsWith("\"CHCallService") ) {
+            target = target.replace("CHCallService", "CHCall");
+        }
+        return target;
+    }
+
     public static void main(String[] args) throws IOException {
         Direction direction;
         String destination = null;
@@ -75,7 +82,9 @@ public class XsEventsToPlant {
                     matcher = XS_SESSION_PAIR.matcher( sessionPair );
                     if ( matcher.find() ) {
                         origin = "\"" + matcher.group(1) + "\"";
+                        origin = replaceService(origin);
                         destination = "\"" + matcher.group(2) + "\"";
+                        destination = replaceService(destination);
                         messages.add(createMessage(event, origin, destination, lineNumber) );
                     }
                 }
