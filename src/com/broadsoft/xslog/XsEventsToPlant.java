@@ -30,7 +30,7 @@ public class XsEventsToPlant {
             + XS_DEVICE + " \\| "
             + XS_SESSION_ID );
 
-    private final static String XS_EVENT_ACTION = "\\t(?:Resuming|Processing|Transforming) Event: ";
+    private final static String XS_EVENT_ACTION = "\\s*(?:Resuming|Processing|Transforming) Event: ";
     private final static String XS_EVENT = "com\\.broadsoft\\.(?:\\w|\\.|)+?\\.(\\w+Event)";
     private final static String XS_EVENT_END = "\\s?(.*)$";
     private final static String XS_SESSION = "((?:\\w|-|:|\\.)+)";
@@ -38,7 +38,7 @@ public class XsEventsToPlant {
     private final static Pattern EVENT_LINE = Pattern.compile(XS_EVENT_ACTION + XS_EVENT + XS_EVENT_END);
 
     private final static Pattern DIRECTION_LINE =
-            Pattern.compile("\\tudp \\d+ Bytes (IN from|OUT to) (\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}):\\d{1,5}");
+            Pattern.compile("\\s*udp \\d+ Bytes (IN from|OUT to) (\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}):\\d{1,5}");
     private final static Pattern SIP_RESPONSE_LINE =
             Pattern.compile("SIP/2.0 (\\d{3}).*?");
     private static final String METHOD =
