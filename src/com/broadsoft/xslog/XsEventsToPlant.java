@@ -25,7 +25,7 @@ public class XsEventsToPlant {
 
 
     private final static Pattern HEAD_LINE = Pattern.compile(XS_DATE
-            + " EDT \\| Info\\s{7}\\| "
+            + " E[DS]T \\| Info\\s{7}\\| "
             + TYPE + " \\| "
             + XS_DEVICE + " \\| "
             + XS_SESSION_ID );
